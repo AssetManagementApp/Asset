@@ -2765,10 +2765,10 @@ function exportUpdExcel() {
 async function runSmartUpdate() {
   if (!_updChecked.size) { showToast('Хөрөнгө сонгогдоогүй', 'err'); return; }
 
-  const server   = document.getElementById('maServerInput').value.trim();
-  const database = document.getElementById('maDatabaseInput').value.trim();
-  const username = document.getElementById('maUsernameInput').value.trim();
-  const password = document.getElementById('maPasswordInput').value;
+  const server   = '';  // GAS ашиглана
+  const database = '';  // GAS ашиглана
+  const username = '';  // GAS ашиглана
+  const password = '';  // GAS ашиглана
 
   const updates = _updAllRows
     .filter(r => _updChecked.has(r.code) && r.hasDiff)
@@ -2801,10 +2801,10 @@ async function runSmartUpdate() {
     if (oldMsg) oldMsg.innerHTML = `<span style="color:var(--green)">✓ ${updated} хөрөнгийн мэдээлэл амжилттай шинэчлэгдлээ</span>`;
 
     // ── AUTO REFRESH: myassets дахин татаж compare шинэчлэх ──
-    const maServer   = document.getElementById('maServerInput').value.trim();
-    const maDatabase = document.getElementById('maDatabaseInput').value.trim();
-    const maUsername = document.getElementById('maUsernameInput').value.trim();
-    const maPassword = document.getElementById('maPasswordInput').value;
+    const maServer   = '';
+    const maDatabase = '';
+    const maUsername = '';
+    const maPassword = '';
     if (maServer && maDatabase) {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
@@ -4727,10 +4727,10 @@ function checkMyAssetsUpdateNeeded() {
 
 async function runMyAssetsUpdate() {
   if (!_pendingUpdates.length) { showToast('Шинэчлэх мөр байхгүй', 'info'); return; }
-  const server   = document.getElementById('maServerInput').value.trim();
-  const database = document.getElementById('maDatabaseInput').value.trim();
-  const username = document.getElementById('maUsernameInput').value.trim();
-  const password = document.getElementById('maPasswordInput').value;
+  const server   = '';  // GAS ашиглана
+  const database = '';  // GAS ашиглана
+  const username = '';  // GAS ашиглана
+  const password = '';  // GAS ашиглана
 
   const btn  = document.getElementById('maUpdateBtn');
   const spin = document.getElementById('maUpdateSpinner');
@@ -6510,12 +6510,12 @@ async function _rmDoUpdate(items) {
   if (!items.length) return false;
 
   // MyAssets холболтын мэдээлэл (Хяналт цэсний input-уудаас авах)
-  const server     = document.getElementById('maServerInput')?.value.trim()   || '';
-  const database   = document.getElementById('maDatabaseInput')?.value.trim() || '';
-  const dbUser     = document.getElementById('maUsernameInput')?.value.trim() || '';
-  const dbPassword = document.getElementById('maPasswordInput')?.value        || '';
+  const server     = '';  // GAS ашиглана
+  const database   = '';  // GAS ашиглана
+  const dbUser     = '';  // GAS ашиглана
+  const dbPassword = '';  // GAS ашиглана
 
-  if (!server || !database || !dbUser || !dbPassword) {
+  if (false) {  // GAS ашиглана — шалгалт хэрэггүй
     showToast('MyAssets холболтын тохиргоог Холболт хэсэгт бөглөнө үү', 'err');
     return false;
   }
