@@ -2888,14 +2888,13 @@ try {
 // Нэвтрэх үед session-д хадгалах
 
 const GAS_BASE = 'https://script.google.com/macros/s/AKfycby60EpqmbWsSGe-8usGvT2PuOgLLDXhNd_z6WEoL3iQ5984HjmiCQ9F0jjZukmrUxc/exec';
-let API_BASE = '';  /* Дотоод сүлжээнд байгаа үед localtonet URL */
+let API_BASE = 'https://script.google.com/macros/s/AKfycbwtdNxP7Ea9VyLPkIeSCMBou67sz9LRMb8lz2iIBVq-Am1nrC98ycHcT_9oFRVgRJ5n/exec';  /* Дотоод сүлжээнд байгаа үед localtonet URL */
 
 async function gasPost(action, params) {
-  const res = await fetch(GAS_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, ...params })
-  });
+  /* GAS CORS шийдэл: GET + URL params ашиглана */
+  const body = encodeURIComponent(JSON.stringify({ action, ...params }));
+  const url = GAS_BASE + '?data=' + body;
+  const res = await fetch(url, { method: 'GET' });
   const text = await res.text();
   try { return JSON.parse(text); } catch(e) { return { ok: false, error: text }; }
 }
@@ -3004,6 +3003,12 @@ function parseLines(txt) {
 
 function populateFromText(txt) {
   const rows = parseLines(txt).filter(r=>r.sel==='1');
+  /* servers.txt-д TUNNEL=https://xxx.localto.net гэсэн мөр байвал API_BASE болгоно */
+  const tunnelLine = txt.split('\n').find(l => l.trim().toUpperCase().startsWith('TUNNEL='));
+  if (tunnelLine) {
+    const tunnelUrl = tunnelLine.split('=').slice(1).join('=').trim();
+    if (tunnelUrl) { API_BASE = tunnelUrl; console.log('API_BASE:', API_BASE); }
+  }
   const servers = [...new Set(rows.map(r=>r.server))].sort();
   if (!servers.length) return;
   const ss = document.getElementById('serverSelect');
