@@ -2902,7 +2902,7 @@ function apiBase() {
   // GitHub Pages-с ачаалагдсан — сонгосон Сервер хаягаар дотоод сүлжээнд шууд холбогдоно
   const srv = (typeof getServer === 'function') ? getServer() : '';
   if (!srv) return '';
-  return 'http://' + srv + ':' + LOCAL_SERVER_PORT;
+  return 'https://' + srv + ':' + LOCAL_SERVER_PORT;
 }
 // Хуучин код API_BASE гэдэг нэрээр дуудсан газруудад зориулж getter маягаар нийцүүлнэ
 Object.defineProperty(window, 'API_BASE', { get: apiBase });
@@ -2916,14 +2916,12 @@ Object.defineProperty(window, 'API_BASE', { get: apiBase });
 async function gasPost(action, payload) {
   const base = apiBase();
   if (!base) throw new Error('Дотоод сүлжээнд байна уу? Сервер сонгогдоогүй байна.');
+  // Google Sheets-ийн бодит URL нь client-side кодод харагдахгүй —
+  // local server (server.js) дотроо нуугдаж, түүгээрээ дамжуулж холбогдоно
   const res = await fetch(base + '/gas-proxy', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...payload })
   });
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) {
-    throw new Error('Сервер JSON бус хариу буцаалаа (' + res.status + ')');
-  }
   return res.json();
 }
 
