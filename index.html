@@ -2765,10 +2765,10 @@ function exportUpdExcel() {
 async function runSmartUpdate() {
   if (!_updChecked.size) { showToast('Хөрөнгө сонгогдоогүй', 'err'); return; }
 
-  const server   = '';
-  const database = '';
-  const username = '';
-  const password = '';
+  const server   = document.getElementById('maServerInput').value.trim();
+  const database = document.getElementById('maDatabaseInput').value.trim();
+  const username = document.getElementById('maUsernameInput').value.trim();
+  const password = document.getElementById('maPasswordInput').value;
 
   const updates = _updAllRows
     .filter(r => _updChecked.has(r.code) && r.hasDiff)
@@ -2801,10 +2801,10 @@ async function runSmartUpdate() {
     if (oldMsg) oldMsg.innerHTML = `<span style="color:var(--green)">✓ ${updated} хөрөнгийн мэдээлэл амжилттай шинэчлэгдлээ</span>`;
 
     // ── AUTO REFRESH: myassets дахин татаж compare шинэчлэх ──
-    const maServer   = '';
-    const maDatabase = '';
-    const maUsername = '';
-    const maPassword = '';
+    const maServer   = document.getElementById('maServerInput').value.trim();
+    const maDatabase = document.getElementById('maDatabaseInput').value.trim();
+    const maUsername = document.getElementById('maUsernameInput').value.trim();
+    const maPassword = document.getElementById('maPasswordInput').value;
     if (maServer && maDatabase) {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
@@ -2887,19 +2887,7 @@ try {
 
 // Нэвтрэх үед session-д хадгалах
 
-/* ── Даймонд холболт: дотоод сүлжээнд байгаа үед localtonet URL оруулна ── */
-const GAS_BASE = 'https://script.google.com/macros/s/AKfycby60EpqmbWsSGe-8usGvT2PuOgLLDXhNd_z6WEoL3iQ5984HjmiCQ9F0jjZukmrUxc/exec';
-let API_BASE = '';  /* Хэрэглэгч холболтын хэсэгт оруулна */
-
-async function gasPost(action, params) {
-  const res = await fetch(GAS_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, ...params })
-  });
-  const text = await res.text();
-  try { return JSON.parse(text); } catch(e) { return { ok: false, error: text }; }
-}
+const API_BASE = window.location.origin;
 let _calcRows = [];      // main asset rows
 let _maRows   = [];      // myassets rows
 let _appUser  = '';      // app login username
@@ -3176,6 +3164,15 @@ async function fetchMainData() {
   startProgress('conn');
   document.getElementById('fetchBtn').disabled = true;
 
+  /* Даймонд: API_BASE хоосон бол дотоод сүлжээнд биш */
+  if (!API_BASE) {
+    stopProgress('conn', false);
+    showConnStatus('conn', '⚠ Дотоод сүлжээнд байна уу? Холболтын URL тохируулаагүй байна.', 'warn');
+    showToast('⚠ Дотоод сүлжээнд байна уу?', 'warn');
+    document.getElementById('fetchBtn').disabled = false;
+    return;
+  }
+
   try {
     const authBody = { username: _appUser, password: _appPass, server, database };
 
@@ -3274,14 +3271,9 @@ async function fetchMainData() {
 
   } catch(err) {
     stopProgress('conn', false);
-    if (err.message === 'Failed to fetch' || err.message === 'Load failed' || err.name === 'TypeError') {
-      showConnStatus('conn', '⚠ Дотоод сүлжээнд байна уу? Даймонд холбогдохгүй байна.', 'warn');
-      showToast('⚠ Дотоод сүлжээнд байна уу?', 'warn');
-    } else {
-      showConnStatus('conn', '✕ ' + err.message, 'err');
-      setStatus('Алдаа гарлаа', 'err');
-      showToast('Холбогдож чадсангүй: ' + err.message, 'err');
-    }
+    showConnStatus('conn', '✕ ' + err.message, 'err');
+    setStatus('Алдаа гарлаа', 'err');
+    showToast('Холбогдож чадсангүй: ' + err.message, 'err');
   }
 
   document.getElementById('fetchBtn').disabled = false;
@@ -3291,6 +3283,11 @@ async function fetchMainData() {
    FETCH MYASSETS
 ════════════════════════════════════════════════════ */
 async function fetchMyAssets() {
+  const server   = document.getElementById('maServerInput').value.trim();
+  const database = document.getElementById('maDatabaseInput').value.trim();
+  const username = document.getElementById('maUsernameInput').value.trim();
+  const password = document.getElementById('maPasswordInput').value;
+  if (!server||!database) { showConnStatus('ma', '⚠ Myassets сервер болон баазаа оруулна уу!', 'err'); return; }
 
   // Шинэ мэдээлэл татахад сонгосон дансны сонголтыг цэвэрлэнэ
   _cmpFilterAccts.clear();
@@ -4727,10 +4724,10 @@ function checkMyAssetsUpdateNeeded() {
 
 async function runMyAssetsUpdate() {
   if (!_pendingUpdates.length) { showToast('Шинэчлэх мөр байхгүй', 'info'); return; }
-  const server   = '';
-  const database = '';
-  const username = '';
-  const password = '';
+  const server   = document.getElementById('maServerInput').value.trim();
+  const database = document.getElementById('maDatabaseInput').value.trim();
+  const username = document.getElementById('maUsernameInput').value.trim();
+  const password = document.getElementById('maPasswordInput').value;
 
   const btn  = document.getElementById('maUpdateBtn');
   const spin = document.getElementById('maUpdateSpinner');
@@ -6510,10 +6507,10 @@ async function _rmDoUpdate(items) {
   if (!items.length) return false;
 
   // MyAssets холболтын мэдээлэл (Хяналт цэсний input-уудаас авах)
-  const server     = '';
-  const database   = '';
-  const dbUser     = '';
-  const dbPassword = '';
+  const server     = document.getElementById('maServerInput')?.value.trim()   || '';
+  const database   = document.getElementById('maDatabaseInput')?.value.trim() || '';
+  const dbUser     = document.getElementById('maUsernameInput')?.value.trim() || '';
+  const dbPassword = document.getElementById('maPasswordInput')?.value        || '';
 
   if (!server || !database || !dbUser || !dbPassword) {
     showToast('MyAssets холболтын тохиргоог Холболт хэсэгт бөглөнө үү', 'err');
@@ -8412,9 +8409,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') rmCloseDetai
       </div>
       <div style="font-size:0.78rem;color:var(--text2);margin-bottom:12px;">Үндсэн хөрөнгийн жагсаалттай харьцуулна.</div>
 
-      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px;padding:10px;background:var(--card2);border-radius:8px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--accent)" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="var(--accent)" stroke-width="1.8"/></svg>
-        Google Sheets-с автоматаар уншина — server шаардлагагүй
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div class="form-group">
+          <div class="form-label">Local Сервер</div>
+          <input id="maServerInput" class="form-input" placeholder="localhost"/>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Мэдээллийн бааз</div>
+          <input id="maDatabaseInput" class="form-input" placeholder="MyAssetsDB"/>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Нэвтрэх нэр</div>
+          <input id="maUsernameInput" class="form-input" placeholder="username"/>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Нууц үг</div>
+          <input id="maPasswordInput" class="form-input" type="password" placeholder="••••••"/>
+        </div>
       </div>
 
       <div class="progress-wrap" id="maProgress"><div class="progress-fill" id="maFill"></div></div>
