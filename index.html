@@ -2805,11 +2805,15 @@ async function runSmartUpdate() {
     const maDatabase = document.getElementById('maDatabaseInput').value.trim();
     const maUsername = document.getElementById('maUsernameInput').value.trim();
     const maPassword = document.getElementById('maPasswordInput').value;
-    if (maServer && maDatabase) {
+    if (maServer && maDatabase && maUsername && maPassword) {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
-        const refJson = await gasPost('getMyassets', {});
-        if (refJson.ok !== false) {
+        const refRes  = await fetch(apiBase() + '/myassets', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ server: maServer, database: maDatabase, dbUser: maUsername, dbPassword: maPassword })
+        });
+        const refJson = await refRes.json();
+        if (refJson.success) {
           _maRows = (refJson.rows||[]).map(r => ({
             ...r,
             EndAmt:      r.InitialCost             != null ? Number(r.InitialCost)             : null,
@@ -2895,14 +2899,14 @@ try {
    localtonet мэт tunnel шаардлагагүй.
 ════════════════════════════════════════════════════ */
 const LOCAL_SERVER_PORT = 3000; // server.js-ийн сонсож буй порт — өөр бол энд өөрчил
+const LOCAL_SERVER_HOST = '172.16.10.178'; // server.js ажиллаж буй компьютерийн LAN IP — DHCP-ээр өөрчлөгдвөл энд шинэчил
 function apiBase() {
   const h = location.hostname;
-  // server.js өөрөө buyka.html-г serve хийж байгаа тохиолдол (localhost, LAN IP гэх мэт)
+  // server.js өөрөө buyka.html-г serve хийж байгаа тохиолдол (localhost, LAN IP гэх мэт) — шууд өөрийн origin-оо ашиглана
   if (h && h !== 'assetmanagementapp.github.io') return window.location.origin;
-  // GitHub Pages-с ачаалагдсан — сонгосон Сервер хаягаар дотоод сүлжээнд шууд холбогдоно
-  const srv = (typeof getServer === 'function') ? getServer() : '';
-  if (!srv) return '';
-  return 'https://' + srv + ':' + LOCAL_SERVER_PORT;
+  // GitHub Pages-с ачаалагдсан — Node сервер (server.js) ажиллаж буй LAN хаягаар шууд холбогдоно
+  if (!LOCAL_SERVER_HOST) return '';
+  return 'https://' + LOCAL_SERVER_HOST + ':' + LOCAL_SERVER_PORT;
 }
 // Хуучин код API_BASE гэдэг нэрээр дуудсан газруудад зориулж getter маягаар нийцүүлнэ
 Object.defineProperty(window, 'API_BASE', { get: apiBase });
@@ -3325,6 +3329,7 @@ async function fetchMyAssets() {
   const username = document.getElementById('maUsernameInput').value.trim();
   const password = document.getElementById('maPasswordInput').value;
   if (!server||!database) { showConnStatus('ma', '⚠ Myassets сервер болон баазаа оруулна уу!', 'err'); return; }
+  if (!username||!password) { showConnStatus('ma', '⚠ Нэвтрэх нэр болон нууц үгээ оруулна уу!', 'err'); return; }
 
   // Шинэ мэдээлэл татахад сонгосон дансны сонголтыг цэвэрлэнэ
   _cmpFilterAccts.clear();
@@ -3332,8 +3337,12 @@ async function fetchMyAssets() {
   startProgress('ma');
   showConnStatus('ma', 'Холбогдож байна...', 'ok');
   try {
-    const json = await gasPost('getMyassets', {});
-    if (json.ok === false) throw new Error(json.error||'Алдаа');
+    const res = await fetch(apiBase() + '/myassets', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ server, database, dbUser: username, dbPassword: password })
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message||'Алдаа');
 
     // server.js /myassets: InitialCost, AccumulatedDepreciation, RemainingCost, Blance, blancecheck
     // buyka.html дотроо: EndAmt, EndDeprAmt, CurrentCost, BlanceCheck гэж хайдаг тул зөргийг bridge хийнэ
