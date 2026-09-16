@@ -3286,7 +3286,6 @@ async function fetchMainData() {
    FETCH MYASSETS
 ════════════════════════════════════════════════════ */
 async function fetchMyAssets() {
-async function fetchMyAssets() {
   // Google Sheets-с GAS-аар татна — server/database шаардлагагүй
   
   
@@ -6515,10 +6514,6 @@ async function _rmDoUpdate(items) {
   const dbUser     = '';  // GAS ашиглана
   const dbPassword = '';  // GAS ашиглана
 
-  if (false) {  // GAS ашиглана — шалгалт хэрэггүй
-    showToast('MyAssets холболтын тохиргоог Холболт хэсэгт бөглөнө үү', 'err');
-    return false;
-  }
 
   // УБД (nationalnumber) + assetcode хосоор бүлэглэх
   // _ubdKey-г динамикаар олох (rmComputeUbdMatch-тэй адил логик)
