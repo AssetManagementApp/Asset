@@ -2786,10 +2786,10 @@ async function runSmartUpdate() {
   btn.disabled = true; spin.style.display = 'block';
 
   try {
-    const res = await fetch(API_BASE+'/myassets-update', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ server, database, dbUser: username, dbPassword: password, mainDatabase: _currentDb, updates })
-    });
+     const _gu1 = await gasPost('massUpdate', { rows: updates });
+     const res = { ok: _gu1.ok !== false, json: async () => ({ success: _gu1.ok !== false, updated: _gu1.updated||0, message: _gu1.error||'OK' }) };
+
+
     const json = await res.json();
     spin.style.display='none';
     if (!json.success) throw new Error(json.message||'Алдаа');
@@ -2808,10 +2808,10 @@ async function runSmartUpdate() {
     if (maServer && maDatabase) {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
-        const refRes = await fetch(API_BASE+'/myassets', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ server: maServer, database: maDatabase, dbUser: maUsername, dbPassword: maPassword })
-        });
+         const _gr = await gasPost('getMyassets', {});
+         const refRes = { ok: _gr.ok !== false, json: async () => ({ success: _gr.ok !== false, rows: _gr.rows||[] }) };
+
+
         const refJson = await refRes.json();
         if (refJson.success) {
           _maRows = (refJson.rows||[]).map(r => ({
@@ -2887,7 +2887,19 @@ try {
 
 // Нэвтрэх үед session-д хадгалах
 
-const API_BASE = window.location.origin;
+/* ── API тохиргоо ── */
+const API_BASE     = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? window.location.origin : 'https://1e68lck4aw.localto.net';
+const GAS_BASE     = 'https://script.google.com/macros/s/AKfycby60EpqmbWsSGe-8usGvT2PuOgLLDXhNd_z6WEoL3iQ5984HjmiCQ9F0jjZukmrUxc/exec';
+
+/* ── Apps Script руу POST хийх helper ── */
+async function gasPost(action, params) {
+  const res = await fetch(GAS_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...params })
+  });
+  return res.json();
+}
 let _calcRows = [];      // main asset rows
 let _maRows   = [];      // myassets rows
 let _appUser  = '';      // app login username
@@ -3274,22 +3286,22 @@ async function fetchMainData() {
    FETCH MYASSETS
 ════════════════════════════════════════════════════ */
 async function fetchMyAssets() {
-  const server   = document.getElementById('maServerInput').value.trim();
-  const database = document.getElementById('maDatabaseInput').value.trim();
-  const username = document.getElementById('maUsernameInput').value.trim();
-  const password = document.getElementById('maPasswordInput').value;
-  if (!server||!database) { showConnStatus('ma', '⚠ Myassets сервер болон баазаа оруулна уу!', 'err'); return; }
-
+async function fetchMyAssets() {
+  // Google Sheets-с GAS-аар татна — server/database шаардлагагүй
+  
+  
+  
+  // Google Sheets холболт — шалгалт хэрэггүй
   // Шинэ мэдээлэл татахад сонгосон дансны сонголтыг цэвэрлэнэ
   _cmpFilterAccts.clear();
 
   startProgress('ma');
   showConnStatus('ma', 'Холбогдож байна...', 'ok');
   try {
-    const res = await fetch(API_BASE+'/myassets', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ server, database, dbUser: username, dbPassword: password })
-    });
+     const _gm = await gasPost('getMyassets', {});
+     const res = { ok: _gm.ok !== false, json: async () => ({ success: _gm.ok !== false, rows: _gm.rows||[] }) };
+
+
     const json = await res.json();
     if (!json.success) throw new Error(json.message||'Алдаа');
 
@@ -4742,10 +4754,10 @@ async function runMyAssetsUpdate() {
   });
 
   try {
-    const res = await fetch(API_BASE+'/myassets-update', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ server, database, dbUser: username, dbPassword: password, mainDatabase: _currentDb, updates })
-    });
+     const _gu2 = await gasPost('massUpdate', { rows: updates });
+     const res = { ok: _gu2.ok !== false, json: async () => ({ success: _gu2.ok !== false, updated: _gu2.updated||0, message: _gu2.error||'OK' }) };
+
+
     const json = await res.json();
     spin.style.display='none';
     if (!json.success) throw new Error(json.message||'Алдаа');
@@ -6569,11 +6581,8 @@ async function _rmDoUpdate(items) {
   showToast(`${updates.length} хөрөнгийн мэдээлэл шинэчилж байна...`, 'info');
 
   try {
-    const res = await fetch(API_BASE + '/myassets-fields-update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ server, database, dbUser, dbPassword, updates })
-    });
+    const _gasRes = await gasPost('updateFields', { updates });
+    const res = { ok: _gasRes.ok !== false, json: async () => ({ success: _gasRes.ok !== false, updated: _gasRes.updated || 0, message: _gasRes.error || 'OK' }) };
     const json = await res.json();
     if (!json.success) throw new Error(json.message || `HTTP ${res.status}`);
 
@@ -8400,31 +8409,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') rmCloseDetai
       </div>
       <div style="font-size:0.78rem;color:var(--text2);margin-bottom:12px;">Үндсэн хөрөнгийн жагсаалттай харьцуулна.</div>
 
-      <div class="form-grid" style="margin-bottom:10px;">
-        <div class="form-group">
-          <div class="form-label">Local Сервер</div>
-          <input id="maServerInput" class="form-input" placeholder="localhost"/>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Мэдээллийн бааз</div>
-          <input id="maDatabaseInput" class="form-input" placeholder="MyAssetsDB"/>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Нэвтрэх нэр</div>
-          <input id="maUsernameInput" class="form-input" placeholder="username"/>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Нууц үг</div>
-          <input id="maPasswordInput" class="form-input" type="password" placeholder="••••••"/>
-        </div>
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--accent2)" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="var(--accent2)" stroke-width="1.8"/></svg>
+        Google Sheets-с автоматаар уншина
       </div>
 
       <div class="progress-wrap" id="maProgress"><div class="progress-fill" id="maFill"></div></div>
       <div class="conn-status" id="maStatus"></div>
 
       <button class="btn btn-primary" style="margin-top:12px;width:100%;justify-content:center;" onclick="fetchMyAssets()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.8"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6" stroke="currentColor" stroke-width="1.8"/></svg>
-        Техникийн нэгдсэн татах
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Дата сэргээх
       </button>
 
       <div id="maUpdatePanel" class="update-panel" style="margin-top:10px;display:none;flex-direction:column;gap:8px;padding:10px 12px;">
