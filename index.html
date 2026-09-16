@@ -2808,12 +2808,8 @@ async function runSmartUpdate() {
     if (maServer && maDatabase) {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
-         const _gr = await gasPost('getMyassets', {});
-         const refRes = { ok: _gr.ok!==false, json: async()=>({ success: _gr.ok!==false, rows: _gr.rows||[] }) };
-
-
-
-        if (refJson.success) {
+        const refJson = await gasPost('getMyassets', {});
+        if (refJson.ok !== false) {
           _maRows = (refJson.rows||[]).map(r => ({
             ...r,
             EndAmt:      r.InitialCost             != null ? Number(r.InitialCost)             : null,
@@ -2887,7 +2883,50 @@ try {
 
 // Нэвтрэх үед session-д хадгалах
 
-const API_BASE = window.location.origin;
+/* ════════════════════════════════════════════════════
+   API_BASE — дотоод сүлжээний Node сервертэй холболт
+   buyka.html нь GitHub Pages (https://...github.io) дээрээс
+   ачаалагдаж болох тул window.location.origin ашиглаж болохгүй —
+   тэр нь GitHub-ийн origin бөгөөд бэкэнд (server.js) байхгүй.
+   Оронд нь: server.js өөрөө serve хийж байвал origin-оо шууд
+   ашиглана; GitHub Pages-с ачаалагдсан бол Холболт цонхны
+   "Сервер" талбарт сонгосон хаягийг (жишээ нь 10.0.0.101)
+   LOCAL_SERVER_PORT портын хамт ашиглан шууд LAN-аар холбогдоно —
+   localtonet мэт tunnel шаардлагагүй.
+════════════════════════════════════════════════════ */
+const LOCAL_SERVER_PORT = 3000; // server.js-ийн сонсож буй порт — өөр бол энд өөрчил
+function apiBase() {
+  const h = location.hostname;
+  // server.js өөрөө buyka.html-г serve хийж байгаа тохиолдол (localhost, LAN IP гэх мэт)
+  if (h && h !== 'assetmanagementapp.github.io') return window.location.origin;
+  // GitHub Pages-с ачаалагдсан — сонгосон Сервер хаягаар дотоод сүлжээнд шууд холбогдоно
+  const srv = (typeof getServer === 'function') ? getServer() : '';
+  if (!srv) return '';
+  return 'http://' + srv + ':' + LOCAL_SERVER_PORT;
+}
+// Хуучин код API_BASE гэдэг нэрээр дуудсан газруудад зориулж getter маягаар нийцүүлнэ
+Object.defineProperty(window, 'API_BASE', { get: apiBase });
+
+/* ════════════════════════════════════════════════════
+   GAS PROXY — Google Sheets (Apps Script) руу шууд биш,
+   дотоод сүлжээний local server (server.js)-ээр дамжуулж холбогдоно.
+   server.js өөрөө Apps Script /exec URL руу fetch хийж хариуг буцаана
+   (CORS болон browser→Apps Script найдваргүй холболтоос сэргийлнэ).
+════════════════════════════════════════════════════ */
+async function gasPost(action, payload) {
+  const base = apiBase();
+  if (!base) throw new Error('Дотоод сүлжээнд байна уу? Сервер сонгогдоогүй байна.');
+  const res = await fetch(base + '/gas-proxy', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload })
+  });
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    throw new Error('Сервер JSON бус хариу буцаалаа (' + res.status + ')');
+  }
+  return res.json();
+}
+
 let _calcRows = [];      // main asset rows
 let _maRows   = [];      // myassets rows
 let _appUser  = '';      // app login username
@@ -3295,12 +3334,8 @@ async function fetchMyAssets() {
   startProgress('ma');
   showConnStatus('ma', 'Холбогдож байна...', 'ok');
   try {
-     const _gm = await gasPost('getMyassets', {});
-     const res = { ok: _gm.ok!==false, json: async()=>({ success: _gm.ok!==false, rows: _gm.rows||[] }) };
-
-
-
-    if (!json.success) throw new Error(json.message||'Алдаа');
+    const json = await gasPost('getMyassets', {});
+    if (json.ok === false) throw new Error(json.error||'Алдаа');
 
     // server.js /myassets: InitialCost, AccumulatedDepreciation, RemainingCost, Blance, blancecheck
     // buyka.html дотроо: EndAmt, EndDeprAmt, CurrentCost, BlanceCheck гэж хайдаг тул зөргийг bridge хийнэ
