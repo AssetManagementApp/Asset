@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дансны хуулга нэгтгэгч</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#161f36;
+    --panel2:#1c2744;
+    --border:#2a3655;
+    --text:#e6ebf5;
+    --muted:#93a1c2;
+    --accent:#4c7dff;
+    --accent2:#7ba6ff;
+    --good:#3ecf8e;
+    --bad:#ff6b6b;
+    --warn:#f5a524;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background:linear-gradient(180deg,#0b1020,#0f172a 40%);
+    color:var(--text);
+    min-height:100vh;
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  header{margin-bottom:28px;}
+  h1{font-size:1.6rem;margin:0 0 6px;font-weight:700;letter-spacing:-0.01em;}
+  header p{margin:0;color:var(--muted);font-size:0.95rem;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:20px;
+  }
+
+  .dropzone{
+    border:2px dashed var(--border);
+    border-radius:12px;
+    padding:36px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    background:var(--panel2);
+  }
+  .dropzone.drag{
+    border-color:var(--accent);
+    background:#1a2440;
+  }
+  .dropzone .icon{font-size:2rem;margin-bottom:8px;}
+  .dropzone .main{font-size:1rem;font-weight:600;}
+  .dropzone .sub{color:var(--muted);font-size:0.85rem;margin-top:4px;}
+  input[type=file]{display:none;}
+
+  .filelist{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+  .fileitem{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--panel2);border:1px solid var(--border);
+    border-radius:9px;padding:9px 12px;font-size:0.88rem;
+  }
+  .fileitem .name{display:flex;align-items:center;gap:8px;overflow:hidden;}
+  .fileitem .name span.fn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;}
+  .fileitem .meta{color:var(--muted);font-size:0.8rem;flex-shrink:0;margin-left:10px;}
+  .fileitem button{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;
+    padding:2px 6px;margin-left:8px;border-radius:6px;
+  }
+  .fileitem button:hover{color:var(--bad);background:#2a1620;}
+
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  button.btn{
+    border:none;border-radius:9px;padding:11px 18px;font-size:0.92rem;font-weight:600;
+    cursor:pointer;transition:transform .08s, opacity .15s;
+  }
+  button.btn:active{transform:scale(0.97);}
+  button.btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover:not(:disabled){background:var(--accent2);}
+  .btn-secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover:not(:disabled){border-color:var(--accent);}
+  .btn-download{background:var(--good);color:#04241a;}
+  .btn-download:hover:not(:disabled){opacity:0.9;}
+
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;margin-top:4px;
+  }
+  .stat{
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;
+  }
+  .stat .label{color:var(--muted);font-size:0.78rem;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+  .stat .value{font-size:1.3rem;font-weight:700;}
+  .stat .value.good{color:var(--good);}
+  .stat .value.bad{color:var(--bad);}
+  .stat .value.warn{color:var(--warn);}
+
+  table.preview{
+    width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:14px;
+  }
+  table.preview th{
+    background:var(--panel2);color:var(--muted);text-align:left;padding:8px 10px;
+    border-bottom:1px solid var(--border);position:sticky;top:0;
+    font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:.02em;
+  }
+  table.preview td{padding:7px 10px;border-bottom:1px solid #1e2a48;white-space:nowrap;}
+  table.preview tr:hover td{background:#182242;}
+  .preview-scroll{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px;margin-top:14px;}
+  .num-pos{color:var(--good);}
+  .num-neg{color:var(--bad);}
+
+  .hint{color:var(--muted);font-size:0.85rem;margin-top:10px;line-height:1.5;}
+  .badge{
+    display:inline-block;background:#1a2440;border:1px solid var(--border);
+    color:var(--accent2);border-radius:999px;padding:2px 10px;font-size:0.75rem;margin-left:8px;
+  }
+  .section-title{font-size:1.05rem;font-weight:700;margin:0 0 4px;}
+  .section-sub{color:var(--muted);font-size:0.85rem;margin:0 0 14px;}
+  footer{text-align:center;color:var(--muted);font-size:0.78rem;margin-top:30px;}
+  .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:0.9rem;}
+  .progress{color:var(--accent2);font-size:0.85rem;margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📊 Дансны хуулга нэгтгэгч</h1>
+    <p>Олон xlsx хуулгын файлыг нэг дор нэгтгэж, давхардлыг хасаад, огноогоор эрэмбэлж, нийт дүнг тооцоол.</p>
+  </header>
+
+  <div class="card">
+    <p class="section-title">1. Файлууд оруулах</p>
+    <p class="section-sub">Дараалсан эсвэл давхцсан хугацааны хуулгын xlsx файлуудыг чирж оруулна уу.</p>
+
+    <div class="dropzone" id="dropzone">
+      <div class="icon">📁</div>
+      <div class="main">Файлуудыг энд чирж тавих эсвэл дарж сонгох</div>
+      <div class="sub">.xlsx — "Statements" хуудастай, олон файл нэг дор сонгож болно</div>
+      <input type="file" id="fileInput" accept=".xlsx" multiple>
+    </div>
+
+    <div class="filelist" id="fileList"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="mergeBtn" disabled>Нэгтгэх ажиллуулах</button>
+      <button class="btn btn-secondary" id="clearBtn" disabled>Бүгдийг цэвэрлэх</button>
+    </div>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <p class="section-title">2. Үр дүн</p>
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="actions">
+      <button class="btn btn-download" id="downloadBtn">⬇️ Нэгтгэсэн xlsx татах</button>
+    </div>
+
+    <p class="hint" id="continuityHint"></p>
+
+    <div class="preview-scroll">
+      <table class="preview" id="previewTable"></table>
+    </div>
+  </div>
+
+  <div class="card" id="emptyCard">
+    <div class="empty">Файл сонгоод "Нэгтгэх ажиллуулах" товч дарахад энд үр дүн харагдана.</div>
+  </div>
+
+  <footer>Бүх боловсруулалт зөвхөн таны browser дээр хийгдэнэ — файл хаана ч илгээгдэхгүй.</footer>
+</div>
+
+<script>
+const HEADERS = ["Тайлант огноо","Цаг","Журнал","Байршил","Утга","Орлого","Зарлага","Үлдэгдэл","Харьцсан данс","Дансны нэр","Банкны нэр","Ханш"];
+const SHEET_NAME = "Statements";
+
+let selectedFiles = []; // {file, id}
+let mergedRows = null;
+let mergedHeaders = null;
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileListEl = document.getElementById('fileList');
+const mergeBtn = document.getElementById('mergeBtn');
+const clearBtn = document.getElementById('clearBtn');
+const progressEl = document.getElementById('progress');
+const resultsCard = document.getElementById('resultsCard');
+const emptyCard = document.getElementById('emptyCard');
+const statsGrid = document.getElementById('statsGrid');
+const previewTable = document.getElementById('previewTable');
+const continuityHint = document.getElementById('continuityHint');
+const downloadBtn = document.getElementById('downloadBtn');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.xlsx')));
+});
+fileInput.addEventListener('change', e => {
+  addFiles(Array.from(e.target.files));
+  fileInput.value = '';
+});
+
+function addFiles(files){
+  files.forEach(f => selectedFiles.push({file:f, id: crypto.randomUUID()}));
+  renderFileList();
+}
+
+function removeFile(id){
+  selectedFiles = selectedFiles.filter(x => x.id !== id);
+  renderFileList();
+}
+
+function renderFileList(){
+  fileListEl.innerHTML = '';
+  selectedFiles.forEach(({file,id}) => {
+    const div = document.createElement('div');
+    div.className = 'fileitem';
+    div.innerHTML = `
+      <div class="name">📄 <span class="fn">${escapeHtml(file.name)}</span></div>
+      <div style="display:flex;align-items:center;">
+        <span class="meta">${(file.size/1024).toFixed(1)} KB</span>
+        <button title="Устгах">✕</button>
+      </div>`;
+    div.querySelector('button').addEventListener('click', () => removeFile(id));
+    fileListEl.appendChild(div);
+  });
+  mergeBtn.disabled = selectedFiles.length === 0;
+  clearBtn.disabled = selectedFiles.length === 0;
+}
+
+clearBtn.addEventListener('click', () => {
+  selectedFiles = [];
+  renderFileList();
+  resultsCard.style.display = 'none';
+  emptyCard.style.display = 'block';
+  progressEl.textContent = '';
+});
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function isDateRow(val){
+  return typeof val === 'string' && /^\d{4}\.\d{2}\.\d{2}$/.test(val.trim());
+}
+
+async function readWorkbook(file){
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, {type:'array'});
+  const sheetName = wb.SheetNames.includes(SHEET_NAME) ? SHEET_NAME : wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  return rows;
+}
+
+mergeBtn.addEventListener('click', async () => {
+  mergeBtn.disabled = true;
+  clearBtn.disabled = true;
+  const seen = new Set();
+  const allRows = [];
+  let totalRawRows = 0;
+  let dupCount = 0;
+  let headerMismatch = false;
+  let headers = null;
+  const perFile = [];
+
+  for (let i = 0; i < selectedFiles.length; i++){
+    const {file} = selectedFiles[i];
+    progressEl.textContent = `Уншиж байна... (${i+1}/${selectedFiles.length}) ${file.name}`;
+    try {
+      const rows = await readWorkbook(file);
+      if (rows.length === 0) { perFile.push({name:file.name, count:0}); continue; }
+      const fileHeaders = rows[0];
+      if (!headers) headers = fileHeaders;
+      else if (JSON.stringify(fileHeaders) !== JSON.stringify(headers)) headerMismatch = true;
+
+      let cnt = 0;
+      for (let r = 1; r < rows.length; r++){
+        const row = rows[r];
+        if (!row || !isDateRow(row[0])) continue; // skip footer/blank/signature rows
+        totalRawRows++;
+        const journal = row[2];
+        const key = journal !== null && journal !== undefined && journal !== '' ? journal : JSON.stringify(row);
+        if (seen.has(key)){ dupCount++; continue; }
+        seen.add(key);
+        allRows.push(row);
+        cnt++;
+      }
+      perFile.push({name:file.name, count:cnt});
+    } catch(err){
+      perFile.push({name:file.name, count:0, error: err.message});
+    }
+  }
+
+  if (!headers) headers = HEADERS;
+
+  allRows.sort((a,b) => {
+    const da = a[0] || '', db = b[0] || '';
+    if (da !== db) return da < db ? -1 : 1;
+    const ta = a[1] || '', tb = b[1] || '';
+    return ta < tb ? -1 : (ta > tb ? 1 : 0);
+  });
+
+  mergedHeaders = headers;
+  mergedRows = allRows;
+
+  progressEl.textContent = '';
+  mergeBtn.disabled = false;
+  clearBtn.disabled = false;
+
+  renderResults({perFile, dupCount, headerMismatch, totalRawRows});
+});
+
+function fmtNum(v){
+  if (typeof v !== 'number') return v ?? '';
+  return v.toLocaleString('mn-MN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderResults({dupCount, headerMismatch, totalRawRows}){
+  emptyCard.style.display = 'none';
+  resultsCard.style.display = 'block';
+
+  const n = mergedRows.length;
+  let totalIncome = 0, totalExpense = 0;
+  mergedRows.forEach(r => {
+    if (typeof r[5] === 'number') totalIncome += r[5];
+    if (typeof r[6] === 'number') totalExpense += r[6];
+  });
+  const firstDate = n ? mergedRows[0][0] : '-';
+  const lastDate = n ? mergedRows[n-1][0] : '-';
+  const lastBalance = n ? mergedRows[n-1][7] : null;
+
+  statsGrid.innerHTML = `
+    <div class="stat"><div class="label">Файлын тоо</div><div class="value">${selectedFiles.length}</div></div>
+    <div class="stat"><div class="label">Нэгтгэсэн гүйлгээ</div><div class="value">${n.toLocaleString()}</div></div>
+    <div class="stat"><div class="label">Хассан давхардал</div><div class="value ${dupCount>0?'warn':''}">${dupCount.toLocaleString()}</div></div>
+    <div class="stat"><div class="label">Огнооны хязгаар</div><div class="value" style="font-size:1rem;">${firstDate} → ${lastDate}</div></div>
+    <div class="stat"><div class="label">Нийт орлого</div><div class="value good">${fmtNum(totalIncome)}</div></div>
+    <div class="stat"><div class="label">Нийт зарлага</div><div class="value bad">${fmtNum(totalExpense)}</div></div>
+    <div class="stat"><div class="label">Эцсийн үлдэгдэл</div><div class="value">${fmtNum(lastBalance)}</div></div>
+  `;
+
+  let hint = '';
+  if (headerMismatch) hint += '⚠️ Зарим файлын багана толгой таарахгүй байсан тул анхны файлын толгойг ашиглав. ';
+  hint += `Нийт ${totalRawRows.toLocaleString()} мөр уншсанаас ${dupCount.toLocaleString()} нь Журнал ID-гаар давхардсан тул хасагдав.`;
+  continuityHint.textContent = hint;
+
+  renderPreview();
+}
+
+function renderPreview(){
+  const maxRows = 300;
+  const rows = mergedRows.slice(0, maxRows);
+  let html = '<thead><tr>' + mergedHeaders.map(h => `<th>${escapeHtml(h ?? '')}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    html += '<tr>' + mergedHeaders.map((_,i) => {
+      const v = r[i];
+      const isNum = (i===5||i===6||i===7) && typeof v === 'number';
+      const cls = i===5 && typeof v==='number' && v>0 ? 'num-pos' : (i===6 && typeof v==='number' && v>0 ? 'num-neg' : '');
+      return `<td class="${cls}">${isNum ? fmtNum(v) : escapeHtml(v ?? '')}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  previewTable.innerHTML = html;
+  if (mergedRows.length > maxRows){
+    const note = document.createElement('div');
+    note.className = 'hint';
+    note.style.padding = '10px 12px';
+    note.textContent = `Эхний ${maxRows} мөрийг харуулж байна (нийт ${mergedRows.length.toLocaleString()} мөр) — бүрэн өгөгдлийг татаж авсан xlsx файлаас харна уу.`;
+    previewTable.parentElement.after(note);
+  }
+}
+
+downloadBtn.addEventListener('click', () => {
+  if (!mergedRows) return;
+  const wsData = [mergedHeaders, ...mergedRows];
+
+  let totalIncome = 0, totalExpense = 0;
+  mergedRows.forEach(r => {
+    if (typeof r[5] === 'number') totalIncome += r[5];
+    if (typeof r[6] === 'number') totalExpense += r[6];
+  });
+  const lastBalance = mergedRows.length ? mergedRows[mergedRows.length-1][7] : '';
+
+  wsData.push([]);
+  const totalRow = new Array(mergedHeaders.length).fill(null);
+  totalRow[4] = 'НИЙТ:';
+  totalRow[5] = totalIncome;
+  totalRow[6] = totalExpense;
+  totalRow[7] = `Эцсийн үлдэгдэл: ${fmtNum(lastBalance)}`;
+  wsData.push(totalRow);
+  wsData.push([]);
+  wsData.push([`Нэгтгэсэн гүйлгээ: ${mergedRows.length}`]);
+  wsData.push([`Файлын тоо: ${selectedFiles.length}`]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [12,8,15,30,45,14,14,16,22,30,18,8].map(w => ({wch:w}));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Statements');
+
+  const today = new Date();
+  const stamp = today.toISOString().slice(0,10).replace(/-/g,'_');
+  XLSX.writeFile(wb, `merged_statements_${stamp}.xlsx`);
+});
+</script>
+</body>
+</html>
