@@ -2809,7 +2809,7 @@ async function runSmartUpdate() {
       showToast('Myassets дахин татаж байна...', 'info');
       try {
          const _gr = await gasPost('getMyassets', {});
-         const refRes = { ok: _gr.ok!==false, json: async()=>({ success: _gr.ok!==false, rows: _gr.rows||[] }) };
+         const refJson = { success: _gr.ok!==false, rows: _gr.rows||[], message: _gr.error||'' };
 
 
 
@@ -3326,7 +3326,7 @@ async function fetchMyAssets() {
   showConnStatus('ma', 'Холбогдож байна...', 'ok');
   try {
      const _gm = await gasPost('getMyassets', {});
-     const res = { ok: _gm.ok!==false, json: async()=>({ success: _gm.ok!==false, rows: _gm.rows||[] }) };
+     const json = { success: _gm.ok!==false, rows: _gm.rows||[], message: _gm.error||'' };
 
 
 
